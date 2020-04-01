@@ -17,15 +17,30 @@
     - 3.[宝塔面板如何上传网站源码？](https://www.west.cn/docs/64323.html)
         - FTP上传工具：FlashFXP
     - 4.[宝塔mysql怎么用navicat连接数据库呢？](https://blog.csdn.net/qq_35694313/article/details/80360362)
-- ### mysql 常用语句
-    - `mysql -u数据库用户名 -p密码`
-    - `show database;`
-    - 选择某个数据库
-        ```
-        mysql> use longyu
-        Database changed
-        ```
+- ### 数据库 mysql
+    - 常用语句
+        - `mysql -u数据库用户名 -p密码` 命令行登陆数据库
+        - `show database;`
+        - 选择某个数据库
+            ```
+            mysql> use longyu
+            Database changed
+            ```
     - 【Navicat Premium 12】 - 最好用的数据库管理工具
+- ### PM2
+    - 参考文章
+        - [pm2---node 进程管理工具](https://juejin.im/post/5d26ffeaf265da1b9163bf15)
+        - [PM2实用入门指南](https://www.cnblogs.com/chyingp/p/pm2-documentation.html)
+    - #### 1.什么是PM2？
+        - P (rocess) M (anager)2
+        - node 进程管理工具
+        - 用于启动 node 服务，且 关闭了命令行也能运行
+    - #### 2.常用命令
+        - `pm2 start app.js`
+        - `pm2 start app.js --watch`
+        - `pm2 restart app.js`
+        - `pm2 stop all`
+        - `pm2 list`
 
 ----
 
