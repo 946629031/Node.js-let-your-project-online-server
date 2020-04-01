@@ -1,4 +1,4 @@
-工具整理
+## 工具整理
 - ### [PuTTY](https://putty.org/)
     - #### 1.PuTTY 是什么？
         - window 远程登陆服务器工具
@@ -25,6 +25,7 @@
         mysql> use longyu
         Database changed
         ```
+    - 【Navicat Premium 12】 - 最好用的数据库管理工具
 
 ----
 
