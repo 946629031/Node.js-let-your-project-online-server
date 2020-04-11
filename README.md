@@ -109,21 +109,24 @@
 
 
 # node.JS 最后一公里   Node.js项目线上服务器部署与发布
-- 第1章 课程预热
-- 第2章 待部署的 5 个本地 Nodejs 项目
-- 第3章 选购域名服务器及备案
-- 第4章 远程登录服务器
-    - [远程登陆](#4-1-远程登陆服务器)
-    - [添加用户并赋予root权限](#4-2-添加用户并赋予root权限)
-    - [SSH 无密码登陆服务器 公钥私钥登陆](#4-3-SSH-无密码登陆服务器-公钥私钥登陆)
-- 第5章 增强服务器安全等级
-- 第6章 搭建 Nodejs 生产环境
-- 第7章 配置 Nginx 实现反向代理
-    - 让web服务 通过 80端口 被访问
-- 第8章 利用 DNSPod 管理域名解析
-- 第9章 服务器配置安装 MongoDB
-- 第10章 向服务器正式部署和发布上线 Nodejs 项目
-- 第11章 使用和配置更安全的 HTTPS 协议
+- #### 目录
+    - 第1章 课程预热
+    - 第2章 待部署的 5 个本地 Nodejs 项目
+    - 第3章 选购域名服务器及备案
+    - 第4章 远程登录服务器
+        - [远程登陆](#4-1-远程登陆服务器)
+        - [添加用户并赋予root权限](#4-2-添加用户并赋予root权限)
+        - [SSH 无密码登陆服务器 公钥私钥登陆](#4-3-SSH-无密码登陆服务器-公钥私钥登陆)
+    - 第5章 增强服务器安全等级
+    - 第6章 搭建 Nodejs 生产环境
+    - [第7章 配置 Nginx 实现反向代理](#第7章-配置-Nginx-实现反向代理)
+        - 让web服务 通过 80端口 被访问
+    - 第8章 利用 DNSPod 管理域名解析
+    - 第9章 服务器配置安装 MongoDB
+    - 第10章 向服务器正式部署和发布上线 Nodejs 项目
+    - 第11章 使用和配置更安全的 HTTPS 协议
+
+----
 
 - # 第4章 远程登录服务器
     - ## 4-1 远程登陆服务器
@@ -217,3 +220,140 @@
     - 3.在浏览器里 可以查看 Nginx 版本信息
         - 浏览器 - 控制台 - Network - 请求头里 可以看到
         - `Server: nginx/1.4.6 (Ubuntu)`
+
+        
+- # 第10章 向服务器正式部署和发布上线 Nodejs 项目
+    > <br>
+    > 本节讲解什么内容？<br>
+    > 本地控制远端代码更新<br>
+    > <br>
+
+    - ## 10-1 在服务器上安装git
+        - 在服务器上安装git，并配置公钥，让其能够拉取你本地开发好的代码
+        - 而不用 每次本地开发完代码，都要一点一点从本地上传
+        - 让服务器的Server 代码也拥有 版本控制的能力
+    - ## 10-2 通过pm2让服务跑起来
+        - 上一节，我们把本地的代码 都推送到了 私有github仓库。并且，服务器也能通过 git下载到 私有仓库的代码
+        
+            > <br>
+            > 思路：<br>
+            > 1.通过本地pm2工具，在本地命令行上，登录服务器，<br>
+            > 2.通知服务器从我们的git仓库里 把代码clone到我们的服务器里，并部署到相应的文件夹中，<br>
+            > 3.然后等待我们的操作：如 `npm install`, `pm2 start`<br>
+            > <br>
+
+        - ### pm2
+            - 那么这个时候，我们就需要有一个 **傻瓜式的、管理代码更新、和服务运行的工具**，帮助我们 **同步代码更新、重启服务** 的工作。那么这个工具，就是我们接下来要讲的 pm2
+                - 他的同类产品还有
+                    - supervisor
+                    - forever
+                    - pm2
+                    - ...
+        - ### pm2 能干嘛？
+            - 守护node服务
+            - 平滑重启
+            - 代码自动更新
+            - 从本地到线上的部署
+                - 官网文档地址：[pm2.keymetrics.io](https://pm2.keymetrics.io)
+                    - 打开 documentation, 翻到 [deployment](https://pm2.keymetrics.io/docs/usage/deployment/)
+        - ## 通过pm2拉取git仓库代码 到服务器上
+            - 参考文章：[通过Github与PM2部署Node应用 - 【知乎专栏】](https://zhuanlan.zhihu.com/p/20940096)
+            - 1.本地安装pm2
+                - `npm install pm2 -g`
+                ```
+                pm2 -v
+                4.2.3
+                ``` 
+                 - 如果可得到版本号，则说明安装成功
+
+            - 2.在本地电脑，新建文件 `ecosystem.json`
+                - 在这里里面，我们来配置 仓库的地址、服务器ip、账号...
+                ```js
+                // ecosystem.json
+
+                {
+                    "apps" : [{
+                        "name" : "HTTP-API",        // 给应用起名字
+                        "script" : "index.js",      // 启动服务的脚本
+                        "env": {
+                            "COMMON_VARIABLE": "true"
+                        },
+                        "env_production" : {        // 设置生产环境的变量 为 production
+                            "NODE_ENV": "production"
+                        }
+                    }],
+                    "deploy" : {    // 部署任务
+                        // "production" is the environment name
+                        "production" : {
+                            "user" : "imooc_manager",   // 服务器上的user
+                            "host" : ["192.168.0.13"],  // 如果有多个服务器 可以传多个ip
+                            "port" : "39999",           // user登陆的端口号, 如果不需要就删掉
+                            "ref"  : "origin/master",   // git 的分支
+                            "repo" : "git@github.com:Username/repository.git",  // github仓库地址
+                            "path" : "/www/wwwroot/threeki/dedao/Server/",  // 我们要把代码部署到服务器的哪个目录下
+                            "ssh_options": "StrictHostKeyChecking=no",  // 吧key校验取消掉
+                            "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production",         // git仓库代码clone后 会执行的命令
+                            "env"  : {
+                                "NODE_ENV": "production"
+                            },
+                        },
+                    }
+                }
+                ```
+            - 3.本地电脑 执行命令```pm2 deploy ecosystem.json production setup```
+                - 命令格式 ```pm2 deploy <configuration_file> <environment> setup```
+                - This command will create the folders on your remote server.
+                    - 如果遇到权限问题
+                        - `sudo chmod 777 <folders_name>`
+                    - 创建好文件夹后，得到下面几个文件夹
+                        ```
+                        - production
+                            - current       // 当前服务所运行的文件夹
+                            - shared        // 日志文件 pid之类的 共享的数据之类的
+                            - source        // clone下来的源代码
+                        ```
+            - 4.可能遇到的问题
+                - 执行命令 `pm2 deploy ecosystem.json production setup` 后遇到下面问题
+                    ```
+                    [root@VM_0_8_centos Server]# pm2 deploy ecosystem.json production setup
+                    --> Deploying to production environment
+                    --> on host 111.229.237.101
+                    ○ hook pre-setup
+                    ```
+                - 解决问题
+                    - [看了官网文档后](https://pm2.keymetrics.io/docs/usage/deployment/#troubleshooting)
+                        - 先尝试clone 仓库代码 `git clone git@github.com:946629031/Init_Node_Server.git`
+                            - 后发现克隆不了
+                        - 找到原因
+                            - 你在执行命令前，先确保 服务器上 有github 的公钥
+                                - 1.如何生成公钥？
+                                    - `ssh-keygen -t rsa -C "946629031@qq.com"`
+                                - 2.查看公钥 `cat /root/.ssh/id_rsa.pub`
+                                    - `cat` 命令是一次显示整个文件
+                                - 3.复制公钥 到github SSH key 中
+                        - 再次执行 `git clone git@github.com:946629031/Init_Node_Server.git` 
+                        - 就能成功克隆代码了
+            - 5.安装成功
+                ```
+                $ pm2 deploy ecosystem.json production setup
+                --> Deploying to production environment
+                --> on host 111.229.237.101
+                ○ hook pre-setup
+                ○ running setup
+                ○ cloning git@github.com:946629031/Init_Node_Server.git
+                ○ full fetch
+                Cloning into '/www/wwwroot/threeki/dedao/Server//source'...
+                ○ hook post-setup
+                ○ setup complete
+                --> Success
+                ```
+            - 这时候再到 服务器上查看
+                ```
+                $ cd /www/wwwroot/threeki/dedao/Server
+
+                $ ls
+                current  shared  source
+                ```
+                显示 `current  shared  source` 即表示pm2部署成功
+
+- 10-3~7 time=08:54
