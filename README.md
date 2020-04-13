@@ -41,6 +41,16 @@
         - `pm2 restart app.js`
         - `pm2 stop all`
         - `pm2 list`
+        - `pm2 logs` 查看日志文件 (如果服务自动重启次数过多，可以查看服务日志)
+- ### 查询端口占用
+    ```
+    netstat -an|grep 8080
+    lsof -i:8080
+    ```
+    - 关闭占用端口的进程 
+    ```
+    kill <pid>
+    ```
 
 ----
 
@@ -258,7 +268,7 @@
                     - 打开 documentation, 翻到 [deployment](https://pm2.keymetrics.io/docs/usage/deployment/)
         - ## 通过pm2拉取git仓库代码 到服务器上
             - 参考文章：[通过Github与PM2部署Node应用 - 【知乎专栏】](https://zhuanlan.zhihu.com/p/20940096)
-            - 1.本地安装pm2
+            - #### 1.本地安装pm2
                 - `npm install pm2 -g`
                 ```
                 pm2 -v
@@ -266,7 +276,7 @@
                 ``` 
                  - 如果可得到版本号，则说明安装成功
 
-            - 2.在本地电脑，新建文件 `ecosystem.json`
+            - #### 2.在本地电脑，新建文件 `ecosystem.json`
                 - 在这里里面，我们来配置 仓库的地址、服务器ip、账号...
                 ```js
                 // ecosystem.json
@@ -274,7 +284,7 @@
                 {
                     "apps" : [{
                         "name" : "HTTP-API",        // 给应用起名字
-                        "script" : "index.js",      // 启动服务的脚本
+                        "script" : "index.js",      // 启动服务的脚本 node index.js
                         "env": {
                             "COMMON_VARIABLE": "true"
                         },
@@ -300,7 +310,7 @@
                     }
                 }
                 ```
-            - 3.本地电脑 执行命令```pm2 deploy ecosystem.json production setup```
+            - #### 3.本地电脑 执行命令```pm2 deploy ecosystem.json production setup```
                 - 命令格式 ```pm2 deploy <configuration_file> <environment> setup```
                 - This command will create the folders on your remote server.
                     - 如果遇到权限问题
@@ -312,28 +322,61 @@
                             - shared        // 日志文件 pid之类的 共享的数据之类的
                             - source        // clone下来的源代码
                         ```
-            - 4.可能遇到的问题
-                - 执行命令 `pm2 deploy ecosystem.json production setup` 后遇到下面问题
-                    ```
-                    [root@VM_0_8_centos Server]# pm2 deploy ecosystem.json production setup
-                    --> Deploying to production environment
-                    --> on host 111.229.237.101
-                    ○ hook pre-setup
-                    ```
-                - 解决问题
-                    - [看了官网文档后](https://pm2.keymetrics.io/docs/usage/deployment/#troubleshooting)
-                        - 先尝试clone 仓库代码 `git clone git@github.com:946629031/Init_Node_Server.git`
-                            - 后发现克隆不了
-                        - 找到原因
-                            - 你在执行命令前，先确保 服务器上 有github 的公钥
-                                - 1.如何生成公钥？
-                                    - `ssh-keygen -t rsa -C "946629031@qq.com"`
-                                - 2.查看公钥 `cat /root/.ssh/id_rsa.pub`
-                                    - `cat` 命令是一次显示整个文件
-                                - 3.复制公钥 到github SSH key 中
-                        - 再次执行 `git clone git@github.com:946629031/Init_Node_Server.git` 
-                        - 就能成功克隆代码了
-            - 5.安装成功
+            - #### 4.可能遇到的问题
+                - ##### 问题1：
+                    - 执行命令 `pm2 deploy ecosystem.json production setup` 后遇到下面问题
+                        ```
+                        [root@VM_0_8_centos Server]# pm2 deploy ecosystem.json production setup
+                        --> Deploying to production environment
+                        --> on host 111.229.237.101
+                        ○ hook pre-setup
+                        ```
+                    - 解决问题
+                        - [看了官网文档后](https://pm2.keymetrics.io/docs/usage/deployment/#troubleshooting)
+                            - 先尝试clone 仓库代码 `git clone git@github.com:946629031/Init_Node_Server.git`
+                                - 后发现克隆不了
+                            - 找到原因
+                                - 你在执行命令前，先确保 服务器上 有github 的公钥
+                                    - 1.如何生成公钥？
+                                        - `ssh-keygen -t rsa -C "946629031@qq.com"`
+                                    - 2.查看公钥 `cat /root/.ssh/id_rsa.pub`
+                                        - `cat` 命令是一次显示整个文件
+                                    - 3.复制公钥 到github SSH key 中
+                            - 再次执行 `git clone git@github.com:946629031/Init_Node_Server.git` 
+                            - 就能成功克隆代码了
+                - ##### 问题2：
+                    - 注意：如果项目带有vue 或者webpack 这种，需要本地构建的代码，可以在"post-deploy"中添加构建命令
+                        - 如： 
+                            - `npm run build` vue本地构建
+                            - `webpack input.js output.js` webpack本地构建
+                            - `grunt build` grunt本地构建
+                        ```
+                        "post-deploy" : "npm install && npm run build && pm2 startOrRestart ecosystem.json --env production"
+                        ```
+                - ##### 问题3：
+                    - 注意：如果部署失败
+                        - [How to fix git pull failed on a deploy via PM2](https://davidburgos.blog/fix-git-pull-failed-deploy-pm2/)
+                        - 出现以下错误 提示
+                        ```
+                        Please, commit your changes or stash them before you can merge.
+                        Aborting
+
+                        git pull failed
+
+                        Deploy failed
+                        ```
+                        - 解决办法
+                        ```
+                        deploy: {
+                            production: {
+                            ...
+                            "pre-deploy": "git reset --hard",   // 这将删除服务器上的更改，然后将获取存储库并进行部署而不会出现问题
+                            ...
+                            }
+                        }
+                        ```
+
+            - #### 5.安装成功
                 ```
                 $ pm2 deploy ecosystem.json production setup
                 --> Deploying to production environment
@@ -356,4 +399,15 @@
                 ```
                 显示 `current  shared  source` 即表示pm2部署成功
 
-- 10-3~7 time=08:54
+
+    - ## 10-3 如何把本地修改同步到线上服务器？
+        - 1.修改本地代码
+        - 2.提交代码
+            ```
+            git add .
+            git commit -m ''
+            git push
+            ```
+        - 3.`pm2 deploy ecosystem.json production`
+
+
