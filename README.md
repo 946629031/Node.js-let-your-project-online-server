@@ -185,151 +185,151 @@
 
 - # 第7章 配置 Nginx 实现反向代理
     ## 1.基础知识
-        - 1.如何配置
-            - 让web服务 通过 80端口 被访问
-            - 安装 Nginx `sudo apt-get install nginx`
-            - `nginx -v`
-            - `cd /etc/nginx`
-            - `cd conf.d`
-            - `sudo vi imooc-com-8081.conf` 新建配置文件，配置文件对应 imooc.com:8081 网址
-                ```
-                upstream imooc {    # imooc 是应用的名字
-                    server 127.0.0.1:8081
+    - 1.如何配置
+        - 让web服务 通过 80端口 被访问
+        - 安装 Nginx `sudo apt-get install nginx`
+        - `nginx -v`
+        - `cd /etc/nginx`
+        - `cd conf.d`
+        - `sudo vi imooc-com-8081.conf` 新建配置文件，配置文件对应 imooc.com:8081 网址
+            ```
+            upstream imooc {    # imooc 是应用的名字
+                server 127.0.0.1:8081
+            }
+
+            server {
+                listen 80;
+                server_name 111.229.237.104; # 这里写服务器的 ip地址
+
+                location / {
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;
+                    proxy_set_header Host $http_host;
+                    proxy_set_header X-Nginx-Proxy true;
+
+                    proxy_pass http://imooc;
+                    proxy_redirect off;
                 }
-
-                server {
-                    listen 80;
-                    server_name 111.229.237.104; # 这里写服务器的 ip地址
-
-                    location / {
-                        proxy_set_header X-Real-IP $remote_addr;
-                        proxy_set_header X-Forward-For $proxy_add_x_forwarded_for;
-                        proxy_set_header Host $http_host;
-                        proxy_set_header X-Nginx-Proxy true;
-
-                        proxy_pass http://imooc;
-                        proxy_redirect off;
-                    }
-                }
+            }
+            ```
+            - ### 常用参数说明
+                - upstream模块中：
+                    - server：负载均衡后端服务器的IP或域名，不写端口的话默认是80。高并发场景用域名，再通过DNS进行负载均衡 
+                - proxy_pass
+                    - nginx反向代理主要通过proxy_pass来配置，将你项目的开发机地址填写到proxy_pass后面，正常的格式为proxy_pass URL即可
+        - `nginx.conf` 是 Nginx 配置文件
+            - 取消注释
                 ```
-                - ### 常用参数说明
-                    - upstream模块中：
-                        - server：负载均衡后端服务器的IP或域名，不写端口的话默认是80。高并发场景用域名，再通过DNS进行负载均衡 
-                    - proxy_pass
-                        - nginx反向代理主要通过proxy_pass来配置，将你项目的开发机地址填写到proxy_pass后面，正常的格式为proxy_pass URL即可
-            - `nginx.conf` 是 Nginx 配置文件
-                - 取消注释
-                    ```
-                    include /etc/nginx/conf.d/*.conf;
-                    include /etc/nginx/siles-enabled/*;
-                    ```
-                    - 意思是 将这两个目录下到文件 都加载进来
-            - `sudo nginx -t` 测试配置文件 有没有错误
-            - `sudo nginx -s reload` 重启nginx
-        - 2.验证
-            - 在浏览器访问 `111.229.237.104`，如果能够正常访问
-            - 则证明
-                - 我们配置的 Nginx 已经生效
-                - 我们跑在 8081 端口上的 node服务，已经被转发到 80端口 上了
-                - 也就是 实现了 **`端口的内部转发`**
-        - 3.在浏览器里 可以查看 Nginx 版本信息
-            - 浏览器 - 控制台 - Network - 请求头里 可以看到
-            - `Server: nginx/1.4.6 (Ubuntu)`
+                include /etc/nginx/conf.d/*.conf;
+                include /etc/nginx/siles-enabled/*;
+                ```
+                - 意思是 将这两个目录下到文件 都加载进来
+        - `sudo nginx -t` 测试配置文件 有没有错误
+        - `sudo nginx -s reload` 重启nginx
+    - 2.验证
+        - 在浏览器访问 `111.229.237.104`，如果能够正常访问
+        - 则证明
+            - 我们配置的 Nginx 已经生效
+            - 我们跑在 8081 端口上的 node服务，已经被转发到 80端口 上了
+            - 也就是 实现了 **`端口的内部转发`**
+    - 3.在浏览器里 可以查看 Nginx 版本信息
+        - 浏览器 - 控制台 - Network - 请求头里 可以看到
+        - `Server: nginx/1.4.6 (Ubuntu)`
     ## 2.自我实践总结
-        - ### 1.端口冲突问题
-            - 情况描述：
-                - 当你的 nginx 在监听 3000端口 时
-                - 你这时候又把应用跑在3000端口，`app.listen(3000)`
-                - 这时候 你就会发现 出现报错
-            - 原因分析：
-                - 在同一台电脑，同一个端口，同一时间内， 只能被一个程序监听
-                - 不能既被nginx监听，又被应用监听 `app.listen(3305`
-                - 否则就会出现端口冲突
-        - ### 2.实现不同的域名映射到不同端口下的应用
-            - [原文连接](https://blog.csdn.net/y523006369/article/details/103696122)
-            ```
-            # nginx.conf
+    - ### 1.端口冲突问题
+        - 情况描述：
+            - 当你的 nginx 在监听 3000端口 时
+            - 你这时候又把应用跑在3000端口，`app.listen(3000)`
+            - 这时候 你就会发现 出现报错
+        - 原因分析：
+            - 在同一台电脑，同一个端口，同一时间内， 只能被一个程序监听
+            - 不能既被nginx监听，又被应用监听 `app.listen(3305`
+            - 否则就会出现端口冲突
+    - ### 2.实现不同的域名映射到不同端口下的应用
+        - [原文连接](https://blog.csdn.net/y523006369/article/details/103696122)
+        ```
+        # nginx.conf
 
-            server {
-                listen 80;
-                server_name  domain1.com;
-                if ( $host !~* "domain1.com" ) {
-                    return 404;
-                }
-                location / {
-                    proxy_pass http://xxx.xxx.xxx.xxx:8080;
-                    proxy_set_header X-Real-IP $remote_addr;
-                }
+        server {
+            listen 80;
+            server_name  domain1.com;
+            if ( $host !~* "domain1.com" ) {
+                return 404;
             }
-
-            server {
-                listen 80;
-                server_name  domain2.com;
-                if ( $host !~* "domain2.com" ) {
-                    return 404;
-                }
-                location / {
-                    proxy_pass http://xxx.xxx.xxx.xxx:8090;
-                    proxy_set_header X-Real-IP $remote_addr;
-                }
+            location / {
+                proxy_pass http://xxx.xxx.xxx.xxx:8080;
+                proxy_set_header X-Real-IP $remote_addr;
             }
-            ```
-        - ### 3.https 证书安装
-            - [Nginx 服务器ssl证书安装](https://cloud.tencent.com/document/product/400/35244)
-            ```
-            server {
-                #SSL 访问端口号为 443
-                listen 443 ssl; 
+        }
 
-                #填写绑定证书的域名
-                server_name www.domain.com; 
-
-                # SSH start
-
-                #证书文件名称
-                ssl_certificate 1_www.domain.com_bundle.crt; 
-
-                #私钥文件名称
-                ssl_certificate_key 2_www.domain.com.key; 
-
-                ssl_session_timeout 5m;
-
-                #请按照以下协议配置
-                ssl_protocols TLSv1 TLSv1.1 TLSv1.2; 
-
-                #请按照以下套件配置，配置加密套件，写法遵循 openssl 标准。
-                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE; 
-                ssl_prefer_server_ciphers on;
-                
-                # SSH end
+        server {
+            listen 80;
+            server_name  domain2.com;
+            if ( $host !~* "domain2.com" ) {
+                return 404;
             }
-            ```
-        - ### 4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https
-            ```
-            server {
-                    listen      3302;
-                    server_name  data.yiyulongyu.com 111.229.237.104;
-                    ssl on;
-                    ssl_certificate /www/server/nginx/ssl/1_data.yiyulongyu.com_bundle.crt;
-                    ssl_certificate_key /www/server/nginx/ssl/2_data.yiyulongyu.com.key;
-                    ssl_session_timeout  60m;
-                    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-                    # ssl_ciphers  HIGH:!aNULL:!MD5;
-                    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
-                    ssl_prefer_server_ciphers   on;
-                    error_page 497 301 https://$http_host$request_uri;
-
-                    location / {
-                        proxy_pass http://127.0.0.1:3305;
-                    }
+            location / {
+                proxy_pass http://xxx.xxx.xxx.xxx:8090;
+                proxy_set_header X-Real-IP $remote_addr;
             }
-            ```
-            - 重点是，错误时返回301转成https
-                ```
+        }
+        ```
+    - ### 3.https 证书安装
+        - [Nginx 服务器ssl证书安装](https://cloud.tencent.com/document/product/400/35244)
+        ```
+        server {
+            #SSL 访问端口号为 443
+            listen 443 ssl; 
+
+            #填写绑定证书的域名
+            server_name www.domain.com; 
+
+            # SSH start
+
+            #证书文件名称
+            ssl_certificate 1_www.domain.com_bundle.crt; 
+
+            #私钥文件名称
+            ssl_certificate_key 2_www.domain.com.key; 
+
+            ssl_session_timeout 5m;
+
+            #请按照以下协议配置
+            ssl_protocols TLSv1 TLSv1.1 TLSv1.2; 
+
+            #请按照以下套件配置，配置加密套件，写法遵循 openssl 标准。
+            ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE; 
+            ssl_prefer_server_ciphers on;
+            
+            # SSH end
+        }
+        ```
+    - ### 4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https
+        ```
+        server {
+                listen      3302;
+                server_name  data.yiyulongyu.com 111.229.237.104;
+                ssl on;
+                ssl_certificate /www/server/nginx/ssl/1_data.yiyulongyu.com_bundle.crt;
+                ssl_certificate_key /www/server/nginx/ssl/2_data.yiyulongyu.com.key;
+                ssl_session_timeout  60m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                # ssl_ciphers  HIGH:!aNULL:!MD5;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers   on;
                 error_page 497 301 https://$http_host$request_uri;
-                ```
-            - [参考连接1](https://blog.csdn.net/lalaaboy/article/details/80895700)
-            - [参考连接2](https://serverfault.com/questions/47876/handling-http-and-https-requests-using-a-single-port-with-nginx)
+
+                location / {
+                    proxy_pass http://127.0.0.1:3305;
+                }
+        }
+        ```
+        - 重点是，错误时返回301转成https
+            ```
+            error_page 497 301 https://$http_host$request_uri;
+            ```
+        - [参考连接1](https://blog.csdn.net/lalaaboy/article/details/80895700)
+        - [参考连接2](https://serverfault.com/questions/47876/handling-http-and-https-requests-using-a-single-port-with-nginx)
         
 - # 第10章 向服务器正式部署和发布上线 Nodejs 项目
     > <br>
