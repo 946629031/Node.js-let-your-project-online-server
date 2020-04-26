@@ -134,7 +134,7 @@
         - [1.端口冲突问题](#1端口冲突问题)
         - [2.实现不同的域名映射到不同端口下的应用](#2实现不同的域名映射到不同端口下的应用)
         - [3.https 证书安装](#3https-证书安装)
-        - [4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https](#4非80端口，其他端口，也HTTPS-nginx-非80端口http-转https)
+        - [4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https](#4非80端口其他端口也https-nginx-非80端口http-转https)
     - 第8章 利用 DNSPod 管理域名解析
     - 第9章 服务器配置安装 MongoDB
     - 第10章 向服务器正式部署和发布上线 Nodejs 项目
