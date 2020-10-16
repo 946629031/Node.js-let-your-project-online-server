@@ -1,4 +1,29 @@
-## 工具整理
+# node.JS 最后一公里   Node.js项目线上服务器部署与发布
+- #### 目录
+    - [0.工具整理](#0工具整理)
+    - 第1章 课程预热
+    - 第2章 待部署的 5 个本地 Nodejs 项目
+    - 第3章 选购域名服务器及备案
+    - 第4章 远程登录服务器
+        - [远程登陆](#4-1-远程登陆服务器)
+        - [添加用户并赋予root权限](#4-2-添加用户并赋予root权限)
+        - [SSH 无密码登陆服务器 公钥私钥登陆](#4-3-SSH-无密码登陆服务器-公钥私钥登陆)
+    - 第5章 增强服务器安全等级
+    - 第6章 搭建 Nodejs 生产环境
+    - [第7章 配置 Nginx 实现反向代理](#第7章-配置-Nginx-实现反向代理)
+        - 让web服务 通过 80端口 被访问
+        - [1.端口冲突问题](#1端口冲突问题)
+        - [2.实现不同的域名映射到不同端口下的应用](#2实现不同的域名映射到不同端口下的应用)
+        - [3.https 证书安装](#3https-证书安装)
+        - [4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https](#4非80端口其他端口也https-nginx-非80端口http-转https)
+    - 第8章 利用 DNSPod 管理域名解析
+    - 第9章 服务器配置安装 MongoDB
+    - 第10章 向服务器正式部署和发布上线 Nodejs 项目
+    - 第11章 使用和配置更安全的 HTTPS 协议
+
+----
+
+- # 0.工具整理
 - ### [PuTTY](https://putty.org/)
     - #### 1.PuTTY 是什么？
         - window 远程登陆服务器工具
@@ -118,28 +143,6 @@
 |数据库密码：|
 
 
-# node.JS 最后一公里   Node.js项目线上服务器部署与发布
-- #### 目录
-    - 第1章 课程预热
-    - 第2章 待部署的 5 个本地 Nodejs 项目
-    - 第3章 选购域名服务器及备案
-    - 第4章 远程登录服务器
-        - [远程登陆](#4-1-远程登陆服务器)
-        - [添加用户并赋予root权限](#4-2-添加用户并赋予root权限)
-        - [SSH 无密码登陆服务器 公钥私钥登陆](#4-3-SSH-无密码登陆服务器-公钥私钥登陆)
-    - 第5章 增强服务器安全等级
-    - 第6章 搭建 Nodejs 生产环境
-    - [第7章 配置 Nginx 实现反向代理](#第7章-配置-Nginx-实现反向代理)
-        - 让web服务 通过 80端口 被访问
-        - [1.端口冲突问题](#1端口冲突问题)
-        - [2.实现不同的域名映射到不同端口下的应用](#2实现不同的域名映射到不同端口下的应用)
-        - [3.https 证书安装](#3https-证书安装)
-        - [4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https](#4非80端口其他端口也https-nginx-非80端口http-转https)
-    - 第8章 利用 DNSPod 管理域名解析
-    - 第9章 服务器配置安装 MongoDB
-    - 第10章 向服务器正式部署和发布上线 Nodejs 项目
-    - 第11章 使用和配置更安全的 HTTPS 协议
-
 ----
 
 - # 第4章 远程登录服务器
@@ -184,7 +187,273 @@
         ```
 
 - # 第7章 配置 Nginx 实现反向代理
-    ## 1.基础知识
+    - [Nginx教程 尚硅谷 (nginx快速上手)](https://www.bilibili.com/video/BV1zJ411w7SV)
+    - ## 基础概念
+        - ### Nginx 三个主要概念
+            ```
+            - 反向代理 和 正向代理
+
+            - 负载均衡
+
+            - 动静分离
+            ```
+            - #### 正向代理
+                - Nginx不仅可以做反向代理，实现负载均衡。还能用作正向代理来进行上网等功能。正向代理：如果把局域网外的 Internet 想象成一个巨大的资源库， 则局域网中的客户端要访问 Internet，则需要通过代理服务器来访问，这种代理服务就称为正向代理。
+                - **`浏览器要配置 代理服务器`**，通过代理服务器进行互联网访问
+                ![](./img/1.jpg)
+            - #### 反向代理
+                - 反向代理，其实客户端对代理是无感知的，因为客户端 **`不需要任何配置`** 就可以访问。
+                - 我们只需要将请求发送到反向代理服务器，由反向代理服务器去选择目标服务器获取数据后，在返回给客户端。
+                - 此时 `反向代理服务器` 和 `目标服务器` 对外就是一个服务器，暴露的是代理服务器地址，隐藏了真实服务器IP地址。
+                ![](./img/2.jpg)
+            - 区别
+                - 正向代理 是 `客户+代理=客户`，反向代理 是 `代理+服务器=服务器`
+                - 正向代理隐藏真实的客户端，反向代理隐藏真实的服务端
+                - 正向代理是内网访问外网代理，反向代理是外网访问内网
+                - 正向代理在客户端配置，反向在服务端
+
+        - ### Nginx 常用命令
+            ```
+            nginx -v
+            nginx -t         # 测试配置文件 有没有错误
+            nginx -s reload  # 重载配置文件 / 重启
+            nginx -s stop    # 关闭
+
+            # linux/mac启动
+            $ service nginx start
+
+            # windows启动
+            > start nginx
+
+            # 查看端口
+            $ netstat -an | grep 端口  # linux/mac系统
+            > netstat -an | findstr 端口  # windows系统
+
+            # 手动指定配置
+            $ nginx -c /usr/local/nginx/conf/nginx.conf
+
+            # -p指定nginx运行目录(日志存储位置)
+            $ nginx -c /path/nginx.conf -p /path/
+
+            # 测试web服务
+            $ curl -i 主机:端口
+            # 或
+            $ telnet 主机 端口
+
+            # 查看进程
+            $ ps -ef | grep nginx
+            $ kill -9 进程id      # 关掉进程
+
+            # 查看错误日志
+            $ tail -30 /var/log/nginx/error.log
+            # 先查看 nginx.conf 配置文件里 http 模块下 error_log 的指定位置 error_log /var/log/nginx/error.log
+            ```
+        - ### Nginx 配置文件
+            - 配置文件位置 `nginx/conf/nginx.conf`
+            - 配置文件 由三部分组成
+                - 1.**`全局块`**
+                - 2.**`events 块`**
+                - 3.**`http 块`**
+            - #### 1.**`全局块`**
+                - 位置：从配置文件开始到events块之间的内容
+                - 主要会设置一些影响 nginx服务器整体运行的配置指令，主要包括配置运行Nginx服务器的用户(组)、允许生成的 worker process数，进程PID存放路径、日志存放路径和类型以及配置文件的引入等。。
+                ```
+                user www-data;
+                worker_processes auto;
+                pid /run/nginx.pid;
+                include /etc/nginx/modules-enabled/*.conf;
+
+                events {
+                    worker_connections 1024;
+                    # multi_accept on;
+                }
+                ```
+                - `worker_processes`
+                    - 这是 Nginx 服务器并发处理服务的关键配置， worker_processes 值越大，可以支持的开发处理量也越多，但是会受到硬件、软件等设备的制约。
+
+            - #### 2.**`events 块`**
+                - events 块，涉及的指令主要影响 Nginx 服务器与用户的网络连接
+                - 常用的设置包括是否开启对多 work process 下的网络连接进行序列化，是否允许同时接收多个网络连接，选取哪种事件驱动模型来处理连接请求，每个 word process 可以同时支持的最大连接数等。
+                    - 上述例子就表示每个 `work process` 支持的最大连接数为 1024
+                    - 这部分的配置对Nginx的性能影响较大，在实际中应该灵活配置。
+            - #### 3.**`http 块`**
+                - 这算是Nginx服务器配置中最频繁的部分，代理、缓存和日志定义等绝大多数功能和第三方模块的配 都在这里
+                - 需要注意的是: `http块` 包含 `http全局块`、`server 块`
+                    - **`http 全局块`**
+                        - 位置：从 `http 块` 开始到 `server 块` 之间的内容
+                        - http全局块 配置的指令包括 文件引入、MIME-TYPE 定义、日志自定义、连接超时时间、单链接请求数上限等。
+
+                    - **`server 块`**
+                        - 这块和虚拟主机有密切关系，虚拟主机从用户角度看，和一台独立的硬件主机是完全一样的，该技术的产生是为了节省互联网服务器硬件成本。
+                            - 每个 `http 块` 可以包括多个 `server 块`
+                            - 而每个 `server 块` 就相当于一个虚拟主机
+                        - 而每个server块也分为全局server 块，以及可以同时包含多个locaton 块。
+                            - 1.`全局server 块`
+                                - 最常见的配置是 本虚拟机主机 的监听配置和 本虚拟主机的名称 或 IP配置。
+                            - 2.`location 块`
+                                - 一个 `server` 块可以配置多个 `location 块`
+                                - 这块的主要作用是基于 `Nginx 服务器` 接收到的 请求字符串 ( 例如server_name/uri-string ) , 对虚拟主机名称 ( 也可以是IP别名 ) 之外的字符串 ( 例如前面的 /uristring ) 进行匹配，对特定的请求进行处理。
+                                - 地址定向、数据缓存 和 应答控制 等功能，还有许多第三方模块的配置也在这里进行。
+
+
+            ```
+            user www-data;
+            worker_processes auto;
+            pid /run/nginx.pid;
+            include /etc/nginx/modules-enabled/*.conf;
+
+            events {
+                worker_connections 768;
+                # multi_accept on;
+            }
+
+            http {
+
+                ##
+                # Basic Settings
+                ##
+
+                sendfile on;
+                tcp_nopush on;
+                tcp_nodelay on;
+                keepalive_timeout 65;
+                types_hash_max_size 2048;
+                # server_tokens off;
+
+                # server_names_hash_bucket_size 64;
+                # server_name_in_redirect off;
+
+                include /etc/nginx/mime.types;
+                default_type application/octet-stream;
+
+                ##
+                # SSL Settings
+                ##
+
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+                ssl_prefer_server_ciphers on;
+
+                ##
+                # Logging Settings
+                ##
+
+                access_log /var/log/nginx/access.log;
+                error_log /var/log/nginx/error.log;
+
+                ##
+                # Gzip Settings
+                ##
+
+                gzip on;
+
+                # gzip_vary on;
+                # gzip_proxied any;
+                # gzip_comp_level 6;
+                # gzip_buffers 16 8k;
+                # gzip_http_version 1.1;
+                # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+                ##
+                # Virtual Host Configs
+                ##
+
+                include /etc/nginx/conf.d/*.conf;
+                include /etc/nginx/sites-enabled/*;
+
+                server {
+                    listen       80;
+                    server_name  abc.com;
+                    root         /home/userftp/;
+
+                    location / {
+                        proxy_redirect off;
+                        proxy_set_header Host $host;
+                        proxy_set_header X-Real-IP $remote_addr;
+                        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                        proxy_pass http://127.0.0.1:8888;
+                    }
+                }
+                # 监听80端口，只要是访问 abc.com 的，就转发到 8888 端口
+            }
+            ```
+
+    ## 1.实操配置示例
+    - ### 示例1：Nginx配置实例 - 反向代理
+        - 1、实现效果
+            - (1) 打开浏览器，在浏览器地址栏输入地址www.123.com, 跳转liunx系统tomcat主页面中
+        - 2、准备工作
+            - (1) 在liunx系统安装tomcat, 使用默认端口 8080
+                - tomcat安装文件放到liunx系统中，解压
+                - 进入 tomcat 的 bin 目录中，./startup.sh 启动 tomcat服务器
+            - (2) 对外开放访问的端口
+                - 开放端口 firewall-cmd --add-port=8080/tcp --permanent
+                - 重启防火墙 firewall-cmd -reload
+                - 查看已经开放的端口号 firewall-cmd --list-all
+        ```
+        - 示意图
+
+
+              window browser                    Nginx                   tomcat / node server
+        ┌───────────────────────┐      ┌───────────────────────┐      ┌───────────────────────┐
+        |                       |      |                       |      |                       |
+        |                       |      |                       |      |                       |
+        |      www.123.com      |─────>|   192.168.17.129:80   |─────>|    127.0.0.1:8080     |
+        |                       |      |                       |      |                       |
+        |                       |      |                       |      |                       |
+        └───────────────────────┘      └───────────────────────┘      └───────────────────────┘
+        ```
+        - 3、修改host
+            - 使得 www.123.com 指向 192.168.17.129
+        - 4.在 nginx 进行请求转发的配置（反向代理配置）
+            ```
+            # nginx.conf
+
+            server {
+                listen       80;
+                server_name  192.168.17.129;
+                root         /home/userftp/;
+
+                location / {
+                    proxy_pass http://127.0.0.1:8080;
+                }
+            }
+            ```
+        - 5、重启 nginx 服务器，浏览器访问 `www.123.com` ，看能不能访问到 `127.0.0.1:8080` 的东西
+    - ### 示例2：Nginx配置实例 - 反向代理实例2
+        - 1、实现效果
+            - 使用 nginx 反向代理，根据访问的路径跳转到不同端口的服务中 nginx 监听端口为 9001
+                - 访问 `http://127.0.0.1:9001/edu/` 直接跳转到 `127.0.0.1:8080`
+                - 访问 `http://127.0.0.1:9001/vod/` 直接跳转到 `127.0.0.1:8081`
+        - 2、准备工作
+            - 分别在 8080 和 8081 两个端口 都启动一个服务器监听该端口
+            - 准备测试页面，并放在对于服务器下
+                ```html
+                <h1>8080 !!!<h1>
+                ```
+                ```html
+                <h1>8081 !!!<h1>
+                ```
+            - 防火墙、安全组 开放端口 9001, 8080, 8081
+
+            ```
+            # nginx.conf
+
+            server {
+                listen       9001;
+                server_name  localhost;
+
+                location ~ /edu/ {
+                    proxy_pass http://127.0.0.1:8080;
+                }
+
+                location ~ /vod/ {
+                    proxy_pass http://127.0.0.1:8081;
+                }
+            }
+            ```
+            `~` 表示后面是一个正则表达式
+
+
     - 1.如何配置
         - 让web服务 通过 80端口 被访问
         - 安装 Nginx `sudo apt-get install nginx`
@@ -331,6 +600,112 @@
         - [参考连接1](https://blog.csdn.net/lalaaboy/article/details/80895700)
         - [参考连接2](https://serverfault.com/questions/47876/handling-http-and-https-requests-using-a-single-port-with-nginx)
         
+----
+# Nginx 系统学习
+- [nginx-超全视频2018 - 总时长18小时](https://www.bilibili.com/video/BV1j4411K7g2?p=54)
+- ### 1.Rewrite 基本概述
+    - rewrite 主要实现 url 地址重写，以及重定向.
+    - Rewrite使用场景
+        - 1.URL访问跳转：支持开发设计，页面跳转，兼容性支持，展示效果
+        - 2.SEO优化：依赖于url路径，以便支持搜索引擎录入
+        - 3.维护：后台维护，流量转发等
+        - 4.安全：伪静态，真实动态页面进行伪装
+    - [rewrite - 【nginx 文档】](https://www.nginx.cn/doc/standard/httprewrite.html)
+    #### Rewrite 配置语法
+    ```
+    语法: rewrite regex replacement [flag]
+
+    默认: none
+
+    作用域: server, location, if
+    ```
+    - 示例
+        ```js
+        //所有请求转发至/pages/maintain.htmL
+        rewrite ^(.*)$ /pages/maintain.html break;
+
+        // \ 转义字符
+        rewrite index\.php$ /pages/maintain.html break ;
+
+        // ()用于匹配括号之间的内容，通过$1, $2调用
+        if ($http_user_agent ~ Chrome){
+            rewrite ^(.*)$ /chrome/$1 break ;
+        }
+
+        rewrite ^(.*)$ /chrome/$1
+        // 当我访问     http://LocaLhost/test.xxx.html
+        // 最终会变成   http://LocaLhost/chrome/test.xxx.html
+
+        ```
+    - #### flag
+        |flag||
+        |----|----|
+        |last| 停止rewrite检测。完成重写指令的处理，然后搜索相应的URI和位置|
+        |break| 停止rewrite检测。完成重写指令的处理|
+        |redirect|使用代码302返回临时重定向; 如果替换行以 `http://`|
+        |permanent|使用代码301返回永久重定向|
+        - 1.对比 `last` 与 `break`:
+            ```
+            location ~ ^/break {
+                rewrite ^/break /test/ break;
+            }
+
+            location ~ ^/last{
+                rewrite ^/last /test/ last;
+            }
+
+            location /test{
+                default_ type application/json;
+                return 200 '{"status" :"success"}';   # 返回html字符串 '{"status" :"success"}'
+            }
+            ```
+            - last 与 break对比总结:
+                ```
+                http://192.168.69.112/last
+                    -> http://192.168.69.112/test
+
+                http://192.168.69.112/break  停止匹配
+                    -> http://192.168.69.112/test
+
+                ```
+                - `last` 会新建立一个请求，请求域名+/test
+                - `break` 匹配后不会进行匹配，会查找对应root站点目录下包含/test目录
+        - 2.对比 flag 中 `redirect` 与 `permanent`
+            ```
+            server {
+                listen 80;
+                server_name localhost;
+                root /soft/code;
+
+                location ~ ^/bgx {
+                      rewrite ^/bgx http://kt.xuliangwei.com redirect ;
+                    # rewrite ^/bgx http://kt.xuliangwei.com permanent ;
+                }
+            ```
+            - redirect
+                - 当我访问 `192.168.69.112/bgx` 时，它会跳转到 `http://kt.xuliangwei.com`
+            - permanent
+                - 当你跳过一次之后，浏览器缓存 就记住了，下次直接跳到 目标地址。除非你用无痕浏览器访问，才会重新跑一遍这个命令，然后在跳转
+    - #### Rewirte 应用场景
+        - 1.隐藏真实地址
+            - 隐藏目录结构，仅向外暴露假地址，然后经过 nginx 过滤后，跳转到指定真实地址
+            ```
+            假地址  http://192.168.69.112/course-11-22-course_33.html
+            真地址  http://192.168.69.112/course/11/22/course_33.html
+
+            location / {
+                rewrite ^/course-(\d+)-(\d+)-course_(\d+)\.html /course/$1/$2course_$3.html break;
+            }
+            ```
+
+        - 2.过滤掉某些用户
+            - 只要你是 Chrome 浏览器过来的，并且是从 `/nginx` 访问过来的，我都一律给他跳转到 指定地址
+            ```
+            if ($http_user_agent ~* Chrome){
+                rewrite ^/nginx http://kt.xuliangwei.com/index.html redirect;
+            }
+            ```
+
 - # 第10章 向服务器正式部署和发布上线 Nodejs 项目
     > <br>
     > 本节讲解什么内容？<br>
