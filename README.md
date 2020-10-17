@@ -213,7 +213,7 @@
                 - 正向代理在客户端配置，反向在服务端
 
         - ### Nginx 常用命令
-            ```
+            ```shell
             nginx -v
             nginx -t         # 测试配置文件 有没有错误
             nginx -s reload  # 重载配置文件 / 重启
@@ -257,7 +257,7 @@
             - #### 1.**`全局块`**
                 - 位置：从配置文件开始到events块之间的内容
                 - 主要会设置一些影响 nginx服务器整体运行的配置指令，主要包括配置运行Nginx服务器的用户(组)、允许生成的 worker process数，进程PID存放路径、日志存放路径和类型以及配置文件的引入等。。
-                ```
+                ```conf
                 user www-data;
                 worker_processes auto;
                 pid /run/nginx.pid;
@@ -296,7 +296,7 @@
                                 - 地址定向、数据缓存 和 应答控制 等功能，还有许多第三方模块的配置也在这里进行。
 
 
-            ```
+            ```conf
             user www-data;
             worker_processes auto;
             pid /run/nginx.pid;
@@ -405,7 +405,7 @@
         - 3、修改host
             - 使得 www.123.com 指向 192.168.17.129
         - 4.在 nginx 进行请求转发的配置（反向代理配置）
-            ```
+            ```conf
             # nginx.conf
 
             server {
@@ -435,7 +435,7 @@
                 ```
             - 防火墙、安全组 开放端口 9001, 8080, 8081
 
-            ```
+            ```conf
             # nginx.conf
 
             server {
@@ -461,7 +461,7 @@
         - `cd /etc/nginx`
         - `cd conf.d`
         - `sudo vi imooc-com-8081.conf` 新建配置文件，配置文件对应 imooc.com:8081 网址
-            ```
+            ```conf
             upstream imooc {    # imooc 是应用的名字
                 server 127.0.0.1:8081
             }
@@ -488,7 +488,7 @@
                     - nginx反向代理主要通过proxy_pass来配置，将你项目的开发机地址填写到proxy_pass后面，正常的格式为proxy_pass URL即可
         - `nginx.conf` 是 Nginx 配置文件
             - 取消注释
-                ```
+                ```conf
                 include /etc/nginx/conf.d/*.conf;
                 include /etc/nginx/siles-enabled/*;
                 ```
@@ -516,7 +516,7 @@
             - 否则就会出现端口冲突
     - ### 2.实现不同的域名映射到不同端口下的应用
         - [原文连接](https://blog.csdn.net/y523006369/article/details/103696122)
-        ```
+        ```conf
         # nginx.conf
 
         server {
@@ -545,7 +545,7 @@
         ```
     - ### 3.https 证书安装
         - [Nginx 服务器ssl证书安装](https://cloud.tencent.com/document/product/400/35244)
-        ```
+        ```conf
         server {
             #SSL 访问端口号为 443
             listen 443 ssl; 
@@ -574,7 +574,7 @@
         }
         ```
     - ### 4.非80端口，其他端口，也HTTPS. nginx 非80端口http 转https
-        ```
+        ```conf
         server {
                 listen      3302;
                 server_name  data.yiyulongyu.com 111.229.237.104;
@@ -602,8 +602,84 @@
         
 ----
 # Nginx 系统学习
+- [nginx 文档](https://www.nginx.cn/doc/)
+- [Nginx 中文官方文档](http://shouce.jb51.net/nginx-doc/)
 - [nginx-超全视频2018 - 总时长18小时](https://www.bilibili.com/video/BV1j4411K7g2?p=54)
-- ### 1.Rewrite 基本概述
+- ### 1.Location
+    - 参考文章： [nginx 的 location 配置详解](https://blog.csdn.net/tjcyjd/article/details/50897959)
+    ```conf
+    语法规则： 
+
+    location [ = | ~ | ~* | ^~ ] /uri/ {
+         … 
+    }
+    ```
+    |||
+    |----|----|
+    |`/`|通用匹配，任何请求都会匹配到|
+    |`=`|精确匹配，不支持正则表达式|
+    |`~`|区分大小写的正则匹配|
+    |`~*`|不区分大小写的正则匹配|
+    |`^~`|uri 以某个常规字符串开头，理解为匹配 url 路径即可。<br> nginx 不对 url 做编码，因此请求为 `/static/20%/aa`，可以被规则 `^~ /static/ /aa` 匹配到（注意是空格）。|
+    |`!~`<br>`!~*`|区分大小写 不匹配 的正则<br> 不区分大小写 不匹配 的正则|
+    |||
+    - 多个location配置的情况下匹配顺序为（参考资料而来，还未实际验证，试试就知道了，不必拘泥，仅供参考）：
+        - 首先匹配 `=`，其次匹配 `^~`，其次是按文件中顺序的 正则匹配，最后是交给 `/` 通用匹配。
+        - `location =` > `location 完整路径` > `location ^~ 路径` > `location ~* 正则` > `location 路径`
+        - 当有匹配成功时候，停止匹配，按当前匹配规则处理请求。
+    ```conf
+    location = / { ... }            #规则A
+
+    location = /login { ... }       #规则B
+
+    location ^~ /static/ { ... }    #规则C
+
+    location ~ \.(gif|jpg|png|js|css)$ { ... }   #规则D
+
+    location ~* \.png$ { ... }      #规则E
+
+    location !~ \.xhtml$ { ... }    #规则F
+
+    location !~* \.xhtml$ { ... }   #规则G
+
+    location / { ... }              #规则H
+    ```
+    - 那么产生的效果如下：
+        - 访问根目录 `/`， 比如 `http://localhost/` 将匹配 规则A
+        - 访问 `http://localhost/login` 将匹配规则B，`http://localhost/register` 则匹配 规则H
+        - 访问 `http://localhost/static/a.html` 将匹配 规则C
+        - 访问 `http://localhost/a.gif`，`http://localhost/b.jpg` 将匹配 `规则D` 和 `规则E`，但是 `规则D` 顺序优先，`规则E` 不起作用，而 `http://localhost/static/c.png` 则优先匹配到 `规则C`
+        - 访问 `http://localhost/a.PNG` 则匹配 `规则E`， 而不会匹配 `规则D`，因为 `规则E` 不区分大小写。
+        - 访问 `http://localhost/a.xhtml` 不会匹配规则F和规则G，`http://localhost/a.XHTML` 不会匹配 `规则G`，因为不区分大小写。`规则F`，`规则G` 属于排除法，符合匹配规则但是不会匹配到，所以想想看实际应用中哪里会用到。
+        - 访问 `http://localhost/category/id/1111` 则最终匹配到 `规则H`，因为以上规则都不匹配，这个时候应该是nginx转发请求给后端应用服务器，比如 FastCGI（php），tomcat（jsp），nginx 作为 方向代理服务器 存在。
+
+    - 所以实际使用中，通常至少有三个匹配规则定义，如下：
+        ```conf
+        # 直接匹配网站根，通过域名访问网站首页比较频繁，使用这个会加速处理，官网如是说。
+        # 这里是直接转发给后端应用服务器了，也可以是一个静态首页
+        # 第一个必选规则
+        location = / {
+            proxy_pass http://tomcat:8080/index
+        }
+        
+        #  第二个必选规则是处理静态文件请求，这是nginx作为http服务器的强项
+        #  有两种配置模式，目录匹配或后缀匹配,任选其一或搭配使用
+        location ^~ /static/ {
+            root /webroot/static/;
+        }
+        location ~* \.(gif|jpg|jpeg|png|css|js|ico)$ {
+            root /webroot/res/;
+        }
+        
+        # 第三个规则就是通用规则，用来转发动态请求到后端应用服务器
+        # 非静态文件请求就默认是动态请求，自己根据实际把握
+        # 毕竟目前的一些框架的流行，带.php,.jsp后缀的情况很少了
+        location / {
+            proxy_pass http://tomcat:8080/
+        }
+        ```
+- ### 2.Rewrite 基本概述
+    > 参考文章：[rewrite 语法 部分 - nginx的location配置详解](https://blog.csdn.net/tjcyjd/article/details/50897959)
     - rewrite 主要实现 url 地址重写，以及重定向.
     - Rewrite使用场景
         - 1.URL访问跳转：支持开发设计，页面跳转，兼容性支持，展示效果
