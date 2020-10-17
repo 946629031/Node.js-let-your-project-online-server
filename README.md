@@ -142,6 +142,37 @@
 |数据库用户名：|
 |数据库密码：|
 
+----
+
+# FTP服务器 / Vsftpd 工具
+- Vsftpd 是一个在 linux 系统上，用来启动 `FTP服务器` 的工具
+- VSFTP是一个基于GPL发布的类Unix系统上使用的FTP服务器软件，它的全称是Very Secure FTP 从此名称可以看出来，编制者的初衷是代码的安全。
+
+Vsftpd 常用命令
+
+    - 1、启动Vsftpd服务其命令为： service vsftpd start 或 /etc/init.d/vsftpd start
+
+    - 2、停止Vsftpd服务的命令为：service vsftpd stop 或 /etc/init.d/vsftpd stop
+
+    - 3、重新启动Vsftpd服务的命令为：service vsftpd restart 或 /etc/init.d/vsftpd restart
+
+    - 4、检查Vsftpd服务的运行状态：service vsftpd status
+
+- FTP 服务器的几种访问方式
+    - 1.浏览器访问：访问地址 `ftp://120.25.109.60/` 然后输入 FTP 登陆名和密码即可
+        ![](./img/3.jpg)
+    - 2.FTP工具访问
+    - 3.命令行访问：`ftp 120.25.109.60` ，语法：`[hostname| ip-address] `
+    - 4.vscode 访问，需要装 SFTP 插件
+
+
+- 如果遇到问题
+    - [无法用浏览器或工具访问VSFTPD 服务器，命令行（端口）访问却成功。](https://blog.csdn.net/zilong00007/article/details/7663152)
+    - 开放下面端口即可
+    ```
+    pasv_min_port=50000
+    pasv_max_port=60000
+    ```
 
 ----
 
@@ -714,7 +745,7 @@
 
         ```
     - #### flag
-        |flag||
+        |flag|解释|
         |----|----|
         |last| 停止rewrite检测。完成重写指令的处理，然后搜索相应的URI和位置|
         |break| 停止rewrite检测。完成重写指令的处理|
