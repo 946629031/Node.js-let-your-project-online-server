@@ -66,7 +66,9 @@
         - `pm2 restart app.js`
         - `pm2 stop all`
         - `pm2 list`
+        - `pm2 show 0` 查看pm2正在运行的第0个应用的详细情况
         - `pm2 logs` 查看日志文件 (如果服务自动重启次数过多，可以查看服务日志)
+        - `pm2 start app.js --name wb123` 重命名应用
 - ### 查询端口占用
     ```
     netstat -an|grep 8080
